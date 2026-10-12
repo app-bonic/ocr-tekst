@@ -34,8 +34,9 @@
   if (spremljeno.raspored) { const r = $(`input[name="raspored"][value="${spremljeno.raspored}"]`); if (r) r.checked = true; }
   if (spremljeno.retci) { const r = $(`input[name="retci"][value="${spremljeno.retci}"]`); if (r) r.checked = true; }
   if (typeof spremljeno.podnaslovi === 'boolean') $('#podnaslovi').checked = spremljeno.podnaslovi;
+  if (typeof spremljeno.kontrast === 'boolean') $('#kontrast').checked = spremljeno.kontrast;
   function spremiPostavke() {
-    lokalno.stavi('ocr-tekst-postavke', { jezik: $('#jezik').value, raspored: raspored(), retci: nacinRedaka(), podnaslovi: $('#podnaslovi').checked });
+    lokalno.stavi('ocr-tekst-postavke', { jezik: $('#jezik').value, raspored: raspored(), retci: nacinRedaka(), podnaslovi: $('#podnaslovi').checked, kontrast: $('#kontrast').checked });
   }
 
   const OPISI = {
@@ -53,6 +54,7 @@
   $$('input[name="retci"]').forEach(r => r.addEventListener('change', spremiPostavke));
   $('#jezik').addEventListener('change', spremiPostavke);
   $('#podnaslovi').addEventListener('change', spremiPostavke);
+  $('#kontrast').addEventListener('change', spremiPostavke);
 
   // ---------- učitavanje datoteka ----------
   dropzona($('#drop'), dodajDatoteke, { accept: 'application/pdf,image/*', visestruko: true });
@@ -273,6 +275,35 @@
     return st.radnik;
   }
 
+  // Crno-bijelo s Otsu pragom: na gustim novinskim skenovima Tesseract manje lijepi riječi
+  function pojacajKontrast(c) {
+    const ctx = c.getContext('2d');
+    const id = ctx.getImageData(0, 0, c.width, c.height), p = id.data;
+    const siva = new Uint8Array(p.length / 4), hist = new Uint32Array(256);
+    for (let i = 0, j = 0; i < p.length; i += 4, j++) {
+      const y = (p[i] * 77 + p[i + 1] * 150 + p[i + 2] * 29) >> 8;
+      siva[j] = y; hist[y]++;
+    }
+    const n = siva.length;
+    let sum = 0;
+    for (let i = 0; i < 256; i++) sum += i * hist[i];
+    let sB = 0, wB = 0, najbolje = 0, prag = 128;
+    for (let i = 0; i < 256; i++) {
+      wB += hist[i]; if (!wB) continue;
+      const wF = n - wB; if (!wF) break;
+      sB += i * hist[i];
+      const razlika = sB / wB - (sum - sB) / wF;
+      const v = wB * wF * razlika * razlika;
+      if (v > najbolje) { najbolje = v; prag = i; }
+    }
+    for (let i = 0, j = 0; i < p.length; i += 4, j++) {
+      const v = siva[j] < prag ? 0 : 255;
+      p[i] = p[i + 1] = p[i + 2] = v;
+    }
+    ctx.putImageData(id, 0, 0);
+    return c;
+  }
+
   // Izreže dio canvasa (r u 0..1) uz mali rub
   function izrezi(c, r) {
     const x0 = Math.floor(r.x0 * c.width), y0 = Math.floor(r.y0 * c.height);
@@ -367,6 +398,7 @@
     $$('.makni').forEach(b => { b.disabled = true; });
     const jezik = $('#jezik').value;
     const nacin = raspored();
+    const kontrast = $('#kontrast').checked;
     const t0 = performance.now();
     try {
       postaviNapredak(0, 'Pokrećem OCR…');
@@ -386,7 +418,8 @@
         for (let j = 0; j < regije.length; j++) {
           const r = regije[j];
           if (regije.length > 1) posao.opis = `${opisStr}, stupac ${j + 1} od ${regije.length}…`;
-          const slika = r ? izrezi(c, r) : c;
+          let slika = r ? izrezi(c, r) : c;
+          if (kontrast) slika = pojacajKontrast(slika); // bez regije: c se ionako više ne koristi
           const psm = r || nacin === 'jedan' ? '4' : '3';
           await w.setParameters({ tessedit_pageseg_mode: psm });
           const { data } = await w.recognize(slika, { rotateAuto: true }, { text: true, blocks: true });
@@ -405,6 +438,7 @@
       }
       const odlomci = slozi(sviRetci, nacinRedaka());
       el.tekst.value = odlomci.join('\n\n');
+      osvjeziSumnjive();
       const pros = pouzdanosti.length ? Math.round(pouzdanosti.reduce((a, b) => a + b, 0) / pouzdanosti.length) : 0;
       el.pouzdanost.textContent = `Pouzdanost OCR-a ≈ ${pros} %`;
       el.pouzdanost.className = 'pilula' + (pros >= 85 ? ' ok' : pros < 65 ? ' greska' : '');
@@ -423,6 +457,30 @@
       osvjeziPopis();
     }
   });
+
+  // ---------- moguće slijepljene riječi ----------
+  // Tesseract u gusto složenim retcima zna izostaviti razmak; takve "riječi" su neobično duge
+  const DUGA_RIJEC = /[\p{L}][\p{L}\d.,]{15,}/gu;
+  function osvjeziSumnjive() {
+    const v = el.tekst.value;
+    const nadjene = [...new Set((v.match(DUGA_RIJEC) || []).filter(t => t.replace(/[^\p{L}]/gu, '').length >= 16 || /\p{L}[.,]\p{L}/u.test(t)))];
+    $('#sumnjive').hidden = !nadjene.length;
+    $('#sumnjivePopis').innerHTML = nadjene.slice(0, 60).map(t => `<button type="button" data-rijec="${esc(t)}">${esc(t)}</button>`).join('');
+  }
+  $('#sumnjivePopis').addEventListener('click', e => {
+    const b = e.target.closest('[data-rijec]');
+    if (!b) return;
+    const i = el.tekst.value.indexOf(b.dataset.rijec);
+    if (i < 0) { osvjeziSumnjive(); return; }
+    el.tekst.focus();
+    el.tekst.setSelectionRange(i, i + b.dataset.rijec.length);
+    // pomakni textarea do označenog mjesta
+    const prije = el.tekst.value.slice(0, i).split('\n').length;
+    const ukupno = el.tekst.value.split('\n').length;
+    el.tekst.scrollTop = Math.max(0, el.tekst.scrollHeight * (prije / ukupno) - el.tekst.clientHeight / 3);
+  });
+  let tajmerSumnjivih;
+  el.tekst.addEventListener('input', () => { clearTimeout(tajmerSumnjivih); tajmerSumnjivih = setTimeout(osvjeziSumnjive, 400); });
 
   // ---------- izvoz u Word (.docx) ----------
   const xml = s => String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, '')

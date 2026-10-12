@@ -37,6 +37,11 @@
   #tekst { min-height: 420px; font-size: 15px; line-height: 1.55; }
   .izvoz { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 14px; }
   .izvoz .polje { flex: 1 1 240px; }
+  .sumnjive { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--upoz-meko); color: var(--upoz); font-size: 14px; }
+  .sumnjive small { color: var(--blijedo); }
+  .sumnjive .gumbi { margin-top: 8px; gap: 6px; }
+  .sumnjive button { border: 1px solid rgb(154 74 5 / .3); background: #fff; color: var(--tekst); border-radius: 7px; padding: 3px 9px; font-size: 13.5px; cursor: pointer; font-family: ui-monospace, Consolas, monospace; }
+  .sumnjive button:hover { border-color: var(--upoz); }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -80,6 +85,7 @@
           <label><input type="radio" name="retci" value="retci"><span>Zadrži retke kao na skenu</span></label>
         </div>
         <small>Odlomci su za članke i knjige. Retke zadrži za obrasce, popise i adrese.</small></div>
+      <label class="kvacica-red"><input type="checkbox" id="kontrast"><span>Crno-bijelo prije prepoznavanja: manje slijepljenih riječi u gustim novinama, ali katkad više grešaka na č, ć i ž</span></label>
       <label class="kvacica-red"><input type="checkbox" id="podnaslovi" checked><span>U Wordu podebljaj kratke retke bez točke (podnaslove)</span></label>
       <button type="button" class="gumb glavni veliki" id="prepoznaj" disabled><span data-ik="trazi"></span>Prepoznaj tekst</button>
       <div class="napredak" hidden id="napredak"><div></div></div>
@@ -113,6 +119,10 @@
     </div>
     <p class="napomena" style="margin-bottom:10px">Tekst ispravi ovdje prije preuzimanja. Prazan redak odvaja odlomke. OCR najčešće griješi na slovima č, ć, đ i na sitnom tisku.</p>
     <textarea id="tekst" spellcheck="true" lang="hr" aria-label="Prepoznati tekst"></textarea>
+    <div class="sumnjive" id="sumnjive" hidden>
+      <b>Možda slijepljene riječi</b> <small>(klik označi riječ u tekstu — dodaj razmake gdje treba)</small>
+      <div class="gumbi" id="sumnjivePopis"></div>
+    </div>
     <div class="izvoz">
       <div class="polje"><label for="imeDocx">Naziv Word datoteke</label><input id="imeDocx" value="tekst.docx"></div>
       <button type="button" class="gumb glavni veliki" id="preuzmi"><span data-ik="preuzmi"></span>Preuzmi .docx</button>
@@ -126,6 +136,6 @@
 <script src="lib/pdf.min.js?v=96de3233"></script>
 <script src="lib/jszip.min.js?v=b5d02b3f"></script>
 <script src="lib/tesseract/tesseract.min.js?v=e101c874"></script>
-<script src="app.js?v=ad20e34d"></script>
+<script src="app.js?v=f4af88af"></script>
 </body>
 </html>
