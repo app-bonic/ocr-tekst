@@ -1,0 +1,8 @@
+OpenOffice dictionary
+----------------------
+
+Language: Croatian (hr HR).
+License:  LGPL/SISSL license, 2003
+Author:   delacko@linux.hr (Denis Lackovic)
+
+Izvor: npm paket dictionary-hr 2.0.0 (wooorm/dictionaries), izvorno OpenOffice/LibreOffice hr_HR.

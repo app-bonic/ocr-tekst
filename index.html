@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OCR – tekst iz skena u Word</title>
-<meta name="description" content="Prepoznaj tekst sa skena, PDF-a ili fotografije (hrvatski i engleski) i preuzmi ga kao Word .docx. Besplatno, u pregledniku, bez slanja datoteka.">
+<meta name="description" content="Prepoznaj tekst sa skena, PDF-a ili fotografije (hrvatski i engleski), ispravi ga uz hrvatski rječnik i preuzmi kao Word .docx. Besplatno, u pregledniku, bez slanja datoteka.">
 <link rel="icon" href="zajednicko/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="zajednicko/apple-touch-icon.png">
 <link rel="stylesheet" href="zajednicko/app-bonic.css?v=86bf3025">
@@ -15,33 +15,64 @@
   .sl .okvir { aspect-ratio: 3 / 4; display: grid; place-items: center; background: var(--meko); border-radius: 7px; overflow: hidden; }
   .sl img { max-width: 100%; max-height: 100%; }
   .sl .ime { font-size: 12px; color: var(--blijedo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sl .makni { position: absolute; top: 4px; right: 4px; border: 0; background: rgb(255 255 255 / .92); border-radius: 7px; width: 26px; height: 26px; display: grid; place-items: center; cursor: pointer; color: var(--blijedo); }
-  .sl .makni:hover { color: var(--greska); }
-  .sl .makni .ik { width: 15px; height: 15px; }
-  .sl .br-regija { position: absolute; left: 10px; top: 10px; }
+  .sl .alatke { position: absolute; top: 4px; right: 4px; display: flex; gap: 3px; }
+  .sl .alatke button { border: 0; background: rgb(255 255 255 / .94); border-radius: 7px; width: 26px; height: 26px; display: grid; place-items: center; cursor: pointer; color: var(--blijedo); box-shadow: 0 1px 3px rgb(0 0 0 / .12); }
+  .sl .alatke button:hover { color: var(--plava); }
+  .sl .alatke button[data-makni]:hover { color: var(--greska); }
+  .sl .alatke .ik { width: 15px; height: 15px; }
+  .sl .oznake { position: absolute; left: 10px; top: 10px; display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
   .postavke { display: flex; flex-direction: column; gap: 14px; }
   .kvacica-red { display: flex; gap: 9px; align-items: flex-start; font-size: 14.5px; cursor: pointer; }
   .kvacica-red input { margin-top: 3px; width: 17px; height: 17px; accent-color: var(--plava); flex: none; }
   .napredak { height: 8px; background: var(--meko); border-radius: 99px; overflow: hidden; }
   .napredak div { height: 100%; width: 0; background: var(--crvena); transition: width .25s; }
   .status { font-size: 13.5px; color: var(--blijedo); min-height: 1.3em; }
-  .oznacavanje { margin-top: 18px; }
-  .oznacavanje .vrh { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .oznacavanje, .rezultat { margin-top: 18px; }
+  .oznacavanje .vrh, .rezultat .vrh { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .listaj { display: flex; align-items: center; gap: 6px; font-weight: 700; }
   .listaj .gumb { min-height: 36px; padding: 6px 12px; }
+  .traka-oznaka { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .traka-oznaka .razmak { flex: 1; }
+  .odabrano { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 4px 8px; border-radius: 10px; background: var(--meko); font-size: 13.5px; font-weight: 700; color: var(--plava); }
+  .odabrano .gumb { min-height: 32px; padding: 4px 10px; font-size: 13.5px; }
   .pregled { position: relative; margin: 0 auto; max-width: 100%; border: 1px solid var(--crta); border-radius: 10px; overflow: hidden; background: var(--meko); line-height: 0; }
   .pregled img { width: 100%; height: auto; display: block; user-select: none; -webkit-user-drag: none; }
-  .pregled canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
-  .rezultat { margin-top: 18px; }
-  .rezultat .vrh { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  #tekst { min-height: 420px; font-size: 15px; line-height: 1.55; }
+  .pregled canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; outline: none; }
+  .pregled canvas:focus-visible { box-shadow: inset 0 0 0 3px var(--crvena); }
+
+  .radni-prostor { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+  @media (min-width: 1000px) { .radni-prostor { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); } .izvornik { position: sticky; top: 12px; } }
+  .urednik { position: relative; border-radius: 12px; background: var(--polje); }
+  .urednik textarea, .urednik .pozadina { margin: 0; width: 100%; height: 520px; overflow-y: scroll; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; }
+  .urednik textarea { position: relative; z-index: 1; background: transparent; resize: vertical; display: block; font-size: 15px; line-height: 1.55; }
+  .urednik .pozadina { position: absolute; inset: 0; color: transparent; pointer-events: none; height: auto; }
+  .pozadina mark { color: transparent; border-radius: 3px; }
+  .pozadina mark.nepoznata { background: #ffe58f; }
+  .pozadina mark.slijepljena { background: #ffc9a8; }
+  .pozadina mark.slaba { background: none; box-shadow: inset 0 -2px 0 #e8590c; }
+  .legenda { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--blijedo); margin-top: 8px; }
+  .legenda span::before { content: ''; display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .legenda .l-nepoznata::before { background: #ffe58f; }
+  .legenda .l-slijepljena::before { background: #ffc9a8; }
+  .legenda .l-slaba::before { box-shadow: inset 0 -2px 0 #e8590c; }
+  .izvornik { border: 1px solid var(--crta); border-radius: 12px; padding: 10px; background: var(--meko); }
+  .izvornik h3 { font: 700 16px/1.1 var(--naslovni); text-transform: uppercase; color: var(--plava); margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
+  .izvornik h3 small { font: 600 12.5px var(--tekst-font, inherit); text-transform: none; color: var(--blijedo); }
+  .izvornik canvas { width: 100%; height: auto; display: block; background: #fff; border-radius: 8px; }
+  .izvornik p { font-size: 13.5px; color: var(--blijedo); }
+  .provjera { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--upoz-meko); color: var(--upoz); font-size: 14px; }
+  .provjera small { color: var(--blijedo); }
+  .provjera .gumbi { margin-top: 8px; gap: 6px; }
+  .provjera button { border: 1px solid rgb(154 74 5 / .3); background: #fff; color: var(--tekst); border-radius: 7px; padding: 3px 9px; font-size: 13.5px; cursor: pointer; }
+  .provjera button.slijepljena { background: #fff4ec; }
+  .provjera button:hover { border-color: var(--upoz); }
+  details.promjene { margin-top: 10px; font-size: 14px; }
+  details.promjene summary { cursor: pointer; font-weight: 700; color: var(--ok); }
+  details.promjene ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; max-height: 220px; overflow: auto; }
+  details.promjene li { background: var(--ok-meko); border-radius: 7px; padding: 3px 9px; font-size: 13px; }
+  details.promjene li s { color: var(--blijedo); }
   .izvoz { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 14px; }
   .izvoz .polje { flex: 1 1 240px; }
-  .sumnjive { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--upoz-meko); color: var(--upoz); font-size: 14px; }
-  .sumnjive small { color: var(--blijedo); }
-  .sumnjive .gumbi { margin-top: 8px; gap: 6px; }
-  .sumnjive button { border: 1px solid rgb(154 74 5 / .3); background: #fff; color: var(--tekst); border-radius: 7px; padding: 3px 9px; font-size: 13.5px; cursor: pointer; font-family: ui-monospace, Consolas, monospace; }
-  .sumnjive button:hover { border-color: var(--upoz); }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -53,7 +84,7 @@
     <span class="ab-ikona"><span data-ik="ocr"></span></span>
     <div>
       <h1>OCR – tekst iz skena</h1>
-      <p>Ubaci sken, PDF ili fotografiju dokumenta. Alat prepozna tekst (hrvatski i engleski), složi ga u odlomke, a ti ga ispraviš i preuzmeš kao Word. Sve se radi u tvom pregledniku, pa se datoteke nigdje ne šalju.</p>
+      <p>Ubaci sken, PDF ili fotografiju dokumenta. Alat prepozna tekst (hrvatski i engleski), ispravi tipične greške uz hrvatski rječnik i složi tekst u odlomke. Ti ga provjeriš uz original i preuzmeš kao Word. Sve se radi u tvom pregledniku, pa se datoteke nigdje ne šalju.</p>
     </div>
   </section>
 
@@ -85,12 +116,14 @@
           <label><input type="radio" name="retci" value="retci"><span>Zadrži retke kao na skenu</span></label>
         </div>
         <small>Odlomci su za članke i knjige. Retke zadrži za obrasce, popise i adrese.</small></div>
+      <label class="kvacica-red"><input type="checkbox" id="rjecnik" checked><span>Ispravi pomoću hrvatskog rječnika (kvačice č/ć/š/ž/đ, slijepljene riječi)</span></label>
+      <label class="kvacica-red"><input type="checkbox" id="pdfTekst" checked><span>Ako PDF već sadrži tekst (nije sken), uzmi ga izravno, bez OCR-a</span></label>
       <label class="kvacica-red"><input type="checkbox" id="kontrast"><span>Crno-bijelo prije prepoznavanja: manje slijepljenih riječi u gustim novinama, ali katkad više grešaka na č, ć i ž</span></label>
       <label class="kvacica-red"><input type="checkbox" id="podnaslovi" checked><span>U Wordu podebljaj kratke retke bez točke (podnaslove)</span></label>
       <button type="button" class="gumb glavni veliki" id="prepoznaj" disabled><span data-ik="trazi"></span>Prepoznaj tekst</button>
       <div class="napredak" hidden id="napredak"><div></div></div>
       <p class="status" id="status" aria-live="polite"></p>
-      <p class="napomena">Prvo prepoznavanje učita OCR jezgru i jezik (oko 6 MB). Nakon toga alat radi i bez interneta. Za novine s više stupaca najbolje je ručno označiti stupce.</p>
+      <p class="napomena">Prvo prepoznavanje učita OCR jezgru, jezik i rječnik (oko 7 MB). Nakon toga alat radi i bez interneta. Za novine s više stupaca najbolje je ručno označiti stupce ili ih pustiti da ih alat predloži.</p>
     </section>
   </div>
 
@@ -103,13 +136,21 @@
         <button type="button" class="gumb" id="sljedeca" aria-label="Sljedeća stranica">›</button>
       </div>
     </div>
-    <p class="napomena" style="margin-bottom:12px">Mišem ili prstom povuci pravokutnik preko svakog stupca, <b>redom kojim se čita</b>. Brojevi pokazuju redoslijed. Naslove, potpise ispod slika i izdvojene citate možeš označiti zasebno ili ih preskočiti. Stranica bez oznaka prepoznaje se automatski.</p>
-    <div class="gumbi" style="margin-bottom:12px">
-      <button type="button" class="gumb" id="ponisti"><span data-ik="rotiraj"></span>Poništi zadnji</button>
+    <p class="napomena" style="margin-bottom:12px">Povuci pravokutnik preko svakog stupca, <b>redom kojim se čita</b>, ili klikni <b>Predloži stupce</b>. Klik na oznaku je odabire: povlačenjem je pomičeš, kutovima mijenjaš veličinu, a gumbima joj mijenjaš redoslijed ili je brišeš (tipka Delete). Stranica bez oznaka prepoznaje se automatski.</p>
+    <div class="traka-oznaka">
+      <button type="button" class="gumb glavni" id="predlozi"><span data-ik="mreza"></span>Predloži stupce</button>
+      <button type="button" class="gumb" id="ponisti"><span data-ik="rotiraj"></span>Poništi zadnju</button>
       <button type="button" class="gumb opasno" id="ocisti"><span data-ik="smece"></span>Očisti stranicu</button>
       <button type="button" class="gumb" id="naSve"><span data-ik="kopiraj"></span>Iste oznake na sve stranice</button>
+      <span class="razmak"></span>
+      <div class="odabrano" id="odabrano" hidden>
+        <span id="odabranoBr"></span>
+        <button type="button" class="gumb" id="ranije" title="Čitaj ranije">‹ Ranije</button>
+        <button type="button" class="gumb" id="kasnije" title="Čitaj kasnije">Kasnije ›</button>
+        <button type="button" class="gumb opasno" id="obrisiOznaku"><span data-ik="x"></span>Obriši</button>
+      </div>
     </div>
-    <div class="pregled" id="pregled"><img id="pregledSlika" alt="Pregled stranice"><canvas id="platno"></canvas></div>
+    <div class="pregled" id="pregled"><img id="pregledSlika" alt="Pregled stranice"><canvas id="platno" tabindex="0" aria-label="Označavanje stupaca"></canvas></div>
   </section>
 
   <section class="kartica rezultat" id="rezultat" hidden>
@@ -117,11 +158,24 @@
       <h2 style="margin:0">Prepoznati tekst</h2>
       <span class="pilula" id="pouzdanost"></span>
     </div>
-    <p class="napomena" style="margin-bottom:10px">Tekst ispravi ovdje prije preuzimanja. Prazan redak odvaja odlomke. OCR najčešće griješi na slovima č, ć, đ i na sitnom tisku.</p>
-    <textarea id="tekst" spellcheck="true" lang="hr" aria-label="Prepoznati tekst"></textarea>
-    <div class="sumnjive" id="sumnjive" hidden>
-      <b>Možda slijepljene riječi</b> <small>(klik označi riječ u tekstu — dodaj razmake gdje treba)</small>
-      <div class="gumbi" id="sumnjivePopis"></div>
+    <div class="radni-prostor">
+      <div>
+        <div class="urednik">
+          <div class="pozadina" id="pozadina" aria-hidden="true"></div>
+          <textarea id="tekst" spellcheck="false" lang="hr" aria-label="Prepoznati tekst"></textarea>
+        </div>
+        <div class="legenda"><span class="l-nepoznata">nema u rječniku</span><span class="l-slijepljena">možda slijepljeno</span><span class="l-slaba">OCR nije siguran</span><span>· prazan redak odvaja odlomke</span></div>
+        <div class="provjera" id="provjera" hidden>
+          <b>Za provjeru</b> <small>(klik označi riječ u tekstu i prikaže izvornik)</small>
+          <div class="gumbi" id="provjeraPopis"></div>
+        </div>
+        <details class="promjene" id="promjene" hidden><summary id="promjeneNaslov"></summary><ul id="promjenePopis"></ul></details>
+      </div>
+      <aside class="izvornik" id="izvornik">
+        <h3>Izvornik <small id="izvornikOpis"></small></h3>
+        <canvas id="izvornikPlatno" hidden></canvas>
+        <p id="izvornikPoruka">Klikni u tekst i ovdje će se prikazati taj dio skena.</p>
+      </aside>
     </div>
     <div class="izvoz">
       <div class="polje"><label for="imeDocx">Naziv Word datoteke</label><input id="imeDocx" value="tekst.docx"></div>
@@ -132,10 +186,11 @@
 </main>
 
 <footer class="ab-dno"></footer>
-<script src="zajednicko/app-bonic.js?v=339bea44"></script>
+<script src="zajednicko/app-bonic.js?v=99d31b2e"></script>
 <script src="lib/pdf.min.js?v=96de3233"></script>
 <script src="lib/jszip.min.js?v=b5d02b3f"></script>
 <script src="lib/tesseract/tesseract.min.js?v=e101c874"></script>
-<script src="app.js?v=f4af88af"></script>
+<script src="rjecnik.js?v=8e0cb0ec"></script>
+<script src="app.js?v=b0d8c1bf"></script>
 </body>
 </html>
